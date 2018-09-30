@@ -1,0 +1,4 @@
+Log:
+  # level: log level log most events. Possible values are trace, debug, info, warn, error, and fatal
+  # default: info
+  level: info
