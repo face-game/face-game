@@ -59,7 +59,7 @@ var sketch = function (s) {
     }
     request.send()
   }
-  var init = function init (cameraReady = false) {
+  var init = function init (cameraReady = false, callback) {
     player = {
       ended: false,
       loc: false,
@@ -69,9 +69,11 @@ var sketch = function (s) {
       snapped: [],
       sent: false,
       remoteAwake: false,
-      content: false
+      content: false,
+      debug: false
     }
     wakeupRemote()
+    getContent(callback)
   }
   var levels = [
     {
@@ -105,8 +107,7 @@ var sketch = function (s) {
   ]
 
   s.setup = function setup () {
-    init()
-    getContent(() => {
+    init(false, () => {
       canvasBg = s.loadImage('/img/45-degree-fabric-light.png')
       for (let i in levels) {
         levels[i].img.loaded = s.loadImage(levels[i].img.src)
@@ -140,6 +141,13 @@ var sketch = function (s) {
   s.draw = function draw () {
     s.imageMode(s.CORNERS)
     s.background(s.color(252, 249, 213))
+    if (player.debug) {
+      s.push()
+      s.translate(s.width, 0)
+      s.scale(-1.0, 1.0)
+      s.image(videoInput.get(), 0, 0, s.width, s.height)
+      s.pop()
+    }
     // s.background(canvasBg)
     s.textFont('Gloria Hallelujah', 22)
     if (!player.cameraReady) {
@@ -229,7 +237,7 @@ var sketch = function (s) {
           let request = new XMLHttpRequest()
           request.open('POST', 'https://face-game.glitch.me/api/0/submit', true)
           request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8')
-          request.send(JSON.stringify(sendData))
+          if (!player.debug) request.send(JSON.stringify(sendData))
 
           player.sent = true
         }
@@ -238,10 +246,14 @@ var sketch = function (s) {
   }
 
   s.mousePressed = function mousePressed () {
-    if (player.sent) init(player.cameraReady)
+    if (player.sent) init(player.cameraReady, () => {})
   }
   s.keyPressed = function keyPressed () {
-    if (player.sent) init(player.cameraReady)
+    if (player.sent) init(player.cameraReady, () => {})
+    else if (s.keyCode === 68 && !player.debug) {
+      console.log('debug mode')
+      player.debug = true
+    }
   }
 }
 var p5Runtime = new p5(sketch, 'p5sketch')
