@@ -87,7 +87,7 @@ var sketch = function (s) {
   }
   var levels = [
     {
-      obj: 'Stick out your tongue and lick the lollipop',
+      obj: 'Stick out your tongue, turn, and lick the lollipop',
       loc: [65, 185],
       side: 0,
       dist: 40,
@@ -101,7 +101,7 @@ var sketch = function (s) {
       }
     },
     {
-      obj: 'Pucker your lips and kiss the puppy',
+      obj: 'Pucker your lips, turn, and kiss the puppy',
       loc: [575, 260],
       side: 1,
       dist: 40,
@@ -165,11 +165,14 @@ var sketch = function (s) {
       if (!player.ended) {
         player.loc = ctracker.getCurrentPosition()
 
+        s.fill(0)
+        s.noStroke()
+        s.textSize(22)
         s.textAlign(s.LEFT, s.TOP)
         s.text(`Level ${player.level}`, 20, 5)
 
-        s.textAlign(s.LEFT, s.TOP)
-        s.text(currLevel.obj, s.width - (20 + s.textWidth(currLevel.obj)), 5)
+        s.textAlign(s.RIGHT, s.TOP)
+        s.text(currLevel.obj, s.width / 4, 5, (3 * s.width) / 4)
 
         s.textAlign(s.CENTER, s.BOTTOM)
         s.textSize(18)
