@@ -1,6 +1,6 @@
 /* gulpfile.js
  * Originally created 9/29/2017 by Perry Naseck (DaAwesomeP)
- * https://github.com/DaAwesomeP/face-game
+ * https://github.com/face-game/face-game
  *
  * Copyright 2018-present Perry Naseck (DaAwesomeP)
  *
