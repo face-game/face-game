@@ -89,7 +89,7 @@ gulp.task('compile', gulp.parallel(() => {
 , () => gulp.src(['node_modules/jquery/dist/**/*']).pipe(gulp.dest('dist/public/assets/js/jquery'))
 , () => gulp.src(['node_modules/bootstrap/dist/js/**/*']).pipe(gulp.dest('dist/public/assets/js/bootstrap'))
 , () => gulp.src(['node_modules/p5/lib/**/*']).pipe(gulp.dest('dist/public/assets/js/p5'))
-, () => gulp.src(['node_modules/clmtrackr/build/**/*']).pipe(gulp.dest('dist/public/assets/js/clmtrackr'))
+, () => gulp.src(['node_modules/ml5/dist/**/*']).pipe(gulp.dest('dist/public/assets/js/ml5'))
 ))
 
 gulp.task('dist', gulp.series('static', 'check', 'clean', 'compile'))

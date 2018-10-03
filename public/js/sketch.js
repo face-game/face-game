@@ -16,14 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/* global p5, clm, XMLHttpRequest */
+/* global p5, ml5, XMLHttpRequest */
 /* eslint no-unused-vars: ["error", { "varsIgnorePattern": "p5Runtime| }] */
 /* eslint new-cap: ["error", { "newIsCapExceptionPattern": "clm|p5" }] */
 'use strict'
 
 var sketch = function (s) {
   var videoInput
-  var ctracker
+  var poseNet
   var canvasBg
 
   var player = {}
@@ -61,13 +61,16 @@ var sketch = function (s) {
     }
     request.send()
   }
-  var init = function init (cameraReady = false, debug = false, callback) {
+  var init = function init (cameraReady = false, modelReady = false, debug = false, callback) {
     if (player.debug) console.log('init')
     player = {
       ended: false,
       loc: false,
       coords: false,
       cameraReady: cameraReady,
+      modelReady: modelReady,
+      poses: [],
+      part: {},
       level: 1,
       snapped: [],
       sent: false,
@@ -117,7 +120,7 @@ var sketch = function (s) {
   ]
 
   s.setup = function setup () {
-    init(false, false, () => {
+    init(false, false, false, () => {
       canvasBg = s.loadImage('/img/45-degree-fabric-light.png')
       s.createCanvas(640, 480)
       s.textSize(50)
@@ -137,9 +140,12 @@ var sketch = function (s) {
       videoInput.size(640, 480)
       videoInput.hide()
 
-      ctracker = new clm.tracker()
-      ctracker.init()
-      ctracker.start(videoInput.elt)
+      poseNet = ml5.poseNet(videoInput, () => {
+        player.modelReady = true
+      })
+      poseNet.on('pose', (results) => {
+        player.poses = results
+      })
     })
   }
 
@@ -156,14 +162,26 @@ var sketch = function (s) {
     // s.background(canvasBg)
     s.textFont('Gloria Hallelujah', 22)
     if (!player.cameraReady) {
-      if (player.debug) console.log('camera ready')
+      if (player.debug) console.log('not camera ready')
       s.textAlign(s.CENTER, s.CENTER)
       s.text('Your browser will prompt you to allow this website to access your camera. Please allow access to play the game.', s.width / 4, s.height / 4, s.width / 2, s.height / 2)
+    } else if (!player.modelReady) {
+      if (player.debug) console.log('show loading')
+      s.textAlign(s.CENTER, s.CENTER)
+      s.text('Loading face detection model...', s.width / 4, s.height / 4, s.width / 2, s.height / 2)
     } else {
       let currLevel = levels[player.level - 1]
 
       if (!player.ended) {
-        player.loc = ctracker.getCurrentPosition()
+        player.part = { score: 0 }
+        player.loc = false
+        for (let i in player.poses) {
+          let noseScore = player.poses[i].pose.keypoints.find(key => key.part === 'nose')
+          if (noseScore.score > player.part.score) {
+            player.part = noseScore
+            player.loc = [player.part.position.x, player.part.position.y]
+          }
+        }
 
         s.fill(0)
         s.noStroke()
@@ -182,7 +200,7 @@ var sketch = function (s) {
         s.image(currLevel.img.loaded, currLevel.loc[0], currLevel.loc[1], currLevel.img.size[0], currLevel.img.size[0])
 
         if (player.loc !== false) {
-          player.coords = [640 - player.loc[62][0], player.loc[62][1]]
+          player.coords = [640 - player.loc[0], player.loc[1]]
 
           player.distFrom = Math.hypot(player.coords[0] - currLevel.loc[0],
             player.coords[1] - currLevel.loc[1])
@@ -259,11 +277,11 @@ var sketch = function (s) {
 
   s.mousePressed = function mousePressed () {
     if (player.debug) console.log('mousepress')
-    if (player.sent) init(player.cameraReady, player.debug, () => {})
+    if (player.sent) init(player.cameraReady, player.modelReady, player.debug, () => {})
   }
   s.keyPressed = function keyPressed () {
     if (player.debug) console.log('keypress')
-    if (player.sent) init(player.cameraReady, player.debug, () => {})
+    if (player.sent) init(player.cameraReady, player.modelReady, player.debug, () => {})
     else if (s.keyCode === 68 && !player.debug) {
       console.log('debug mode')
       player.debug = true
