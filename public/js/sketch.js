@@ -128,8 +128,10 @@ var sketch = function (s) {
       videoInput = s.createCapture({
         video: {
           mandatory: {
-            minWidth: 640,
-            minHeight: 480
+            minWidth: 320,
+            minHeight: 240,
+            maxWidth: 640,
+            maxHeight: 480
           },
           optional: [{ minFrameRate: 10 }]
         },
