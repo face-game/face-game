@@ -264,7 +264,8 @@ var sketch = function (s) {
           let sendData = {
             images: [],
             created: new Date(),
-            userAgent: window.navigator.userAgent
+            userAgent: window.navigator.userAgent,
+            devicePixelRatio: window.devicePixelRatio
           }
           for (let i in player.snapped) {
             sendData.images.push({
