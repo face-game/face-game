@@ -25,6 +25,12 @@ var sketch = function (s) {
   var videoInput
   var poseNet
   var canvasBg
+  const width = 640
+  const height = 480
+  var devPixRat = 1
+  if (window.devicePixelRatio > 1) devPixRat = window.devicePixelRatio
+  const rWidth = width * devPixRat
+  const rHeight = height * devPixRat
 
   var player = {}
   var getContent = function getContent (callback) {
@@ -76,6 +82,9 @@ var sketch = function (s) {
       sent: false,
       remoteAwake: false,
       content: false,
+      sendData: {},
+      sendInit: false,
+      startShowLoad: false,
       debug: debug
     }
     wakeupRemote()
@@ -134,7 +143,7 @@ var sketch = function (s) {
       }, () => {
         player.cameraReady = true
       })
-      // videoInput.size(640, 480)
+      videoInput.size(rWidth, rHeight)
       videoInput.hide()
 
       poseNet = ml5.poseNet(videoInput, () => {
@@ -158,6 +167,9 @@ var sketch = function (s) {
     }
     // s.background(canvasBg)
     s.textFont('Gloria Hallelujah', 22)
+    s.fill(0)
+    s.noStroke()
+    s.textAlign(s.CENTER, s.CENTER)
     if (navigator.userAgent.toLowerCase().search('phone') !== -1 ||
         navigator.userAgent.toLowerCase().search('ipad') !== -1 ||
         navigator.userAgent.toLowerCase().search('android') !== -1) {
@@ -176,7 +188,8 @@ var sketch = function (s) {
       s.textAlign(s.CENTER, s.CENTER)
       s.text('Your browser will prompt you to allow this website to access your camera. Please allow access to play the game.', s.width / 4, s.height / 4, s.width / 2, s.height / 2)
     } else if (!player.modelReady) {
-      if (player.debug) console.log('show loading')
+      if (player.debug && !player.startShowLoad) console.log('show loading')
+      player.startShowLoad = true
       s.textAlign(s.CENTER, s.CENTER)
       s.text('Loading face detection model...', s.width / 4, s.height / 4, s.width / 2, s.height / 2)
     } else {
@@ -210,7 +223,7 @@ var sketch = function (s) {
         s.image(currLevel.img.loaded, currLevel.loc[0], currLevel.loc[1], currLevel.img.size[0], currLevel.img.size[0])
 
         if (player.loc !== false) {
-          player.coords = [640 - player.loc[0], player.loc[1]]
+          player.coords = [(rWidth - player.loc[0]) / devPixRat, player.loc[1] / devPixRat]
 
           player.distFrom = Math.hypot(player.coords[0] - currLevel.loc[0],
             player.coords[1] - currLevel.loc[1])
@@ -251,48 +264,91 @@ var sketch = function (s) {
         }
         s.stroke(0)
         s.fill(255)
-        s.textSize(40)
+        s.textSize(44)
         s.textAlign(s.CENTER, s.CENTER)
         s.text('Wow! very cute!', s.width / 2, s.height / 2)
 
         s.textAlign(s.CENTER, s.BOTTOM)
         s.textSize(18)
-        s.text('Click or press any key to play again!', s.width / 2, s.height - 5)
+        // s.text('Click or press any key to play again!', s.width / 2, s.height - 5)
+        s.fill(0)
+        s.stroke(255)
+        s.strokeWeight(2)
+        s.rect(s.width / 10, s.height - 40, 3 * s.width / 10, 40)
+        s.rect(6 * s.width / 10, s.height - 40, 3 * s.width / 10, 40)
 
-        if (!player.sent) {
-          if (player.debug) console.log('sending')
-          let sendData = {
-            images: [],
-            created: new Date(),
-            userAgent: window.navigator.userAgent,
-            devicePixelRatio: window.devicePixelRatio
-          }
-          for (let i in player.snapped) {
-            sendData.images.push({
-              level: s.int(i) + 1,
-              img: player.snapped[i].canvas.toDataURL()
-            })
-          }
-          if (player.debug) console.log('sendData', sendData)
+        s.fill(255)
+        s.stroke(0)
+        if (!player.sent) s.text('Submit my photos!', s.width / 4, s.height - 5)
+        else s.text('Submitted!', s.width / 4, s.height - 5)
+        s.text('Play again!', 3 * s.width / 4, s.height - 5)
 
+        player.sendData = {
+          images: [],
+          created: new Date(),
+          userAgent: window.navigator.userAgent,
+          devicePixelRatio: window.devicePixelRatio
+        }
+        for (let i in player.snapped) {
+          player.sendData.images.push({
+            level: s.int(i) + 1,
+            img: player.snapped[i].canvas.toDataURL()
+          })
+        }
+
+        if (!player.sent && !player.sendInit) {
+          if (player.debug) console.log('sendData', player.sendData)
           wakeupRemote()
-          let request = new XMLHttpRequest()
-          request.open('POST', 'https://face-game.glitch.me/api/0/submit', true)
-          request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8')
-          if (!player.debug) request.send(JSON.stringify(sendData))
-          player.sent = true
+          player.sendInit = true
         }
       }
     }
+    if (player.debug) {
+      s.fill(s.color(255, 0, 0, 100))
+      s.noStroke()
+      s.textFont('Courier New', 90)
+      s.textAlign(s.CENTER, s.CENTER)
+      s.text('DEBUG MODE', s.width / 2, s.height / 3)
+      s.text('DEBUG MODE', s.width / 2, 2 * s.height / 3)
+    }
   }
+
+  // s.mouseMoved = function mouseMoved () {
+  //   if (player.ended) {
+  //     if ((s.mouseX >= s.width / 10) && (s.mouseX <= 4 * s.width / 10) &&
+  //         (s.mouseY >= s.height - 40) && (s.mouseX <= s.height)) {
+  //       s.cursor(s.HAND)
+  //     } else if ((s.mouseX >= 6 * s.width / 10) && (s.mouseX <= 9 * s.width / 10) &&
+  //                (s.mouseY >= s.height - 40) && (s.mouseX <= s.height)) {
+  //       s.cursor(s.HAND)
+  //     } else s.cursor(s.ARROW)
+  //   }
+  // }
 
   s.mousePressed = function mousePressed () {
     if (player.debug) console.log('mousepress')
-    if (player.sent) init(player.cameraReady, player.modelReady, player.debug, () => {})
+    // if (player.sent) init(player.cameraReady, player.modelReady, player.debug, () => {})
+    if ((s.mouseX >= s.width / 10) && (s.mouseX <= 4 * s.width / 10) &&
+        (s.mouseY >= s.height - 40) && (s.mouseX <= s.height)) {
+      if (!player.sent && player.sendInit && player.ended) {
+        if (player.debug) console.log('sending')
+        wakeupRemote()
+        let request = new XMLHttpRequest()
+        request.open('POST', 'https://face-game.glitch.me/api/0/submit', true)
+        request.setRequestHeader('Content-Type', 'application/json; charset=UTF-8')
+        if (!player.debug) request.send(JSON.stringify(player.sendData))
+        player.sent = true
+      }
+    } else if ((s.mouseX >= 6 * s.width / 10) && (s.mouseX <= 9 * s.width / 10) &&
+               (s.mouseY >= s.height - 40) && (s.mouseX <= s.height)) {
+      if (player.ended) {
+        init(player.cameraReady, player.modelReady, player.debug, () => {})
+      }
+    }
   }
   s.keyPressed = function keyPressed () {
     if (player.debug) console.log('keypress')
-    if (player.sent) init(player.cameraReady, player.modelReady, player.debug, () => {})
+    // if (player.sent) init(player.cameraReady, player.modelReady, player.debug, () => {})
     else if (s.keyCode === 68 && !player.debug) {
       console.log('debug mode')
       player.debug = true
